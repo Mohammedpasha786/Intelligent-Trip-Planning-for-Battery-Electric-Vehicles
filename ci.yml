@@ -1,0 +1,105 @@
+name: BEV Trip Planner CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: MATLAB Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024a
+          products: >
+            Simulink
+            Powertrain_Blockset
+            Mapping_Toolbox
+            Optimization_Toolbox
+
+      - name: Run MATLAB checkcode (lint)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            files = dir(fullfile('src', '**', '*.m'));
+            issues = false;
+            for i = 1:length(files)
+              fp = fullfile(files(i).folder, files(i).name);
+              msgs = checkcode(fp, '-id');
+              if ~isempty(msgs)
+                fprintf('LINT: %s\n', fp);
+                for j = 1:length(msgs)
+                  fprintf('  Line %d: [%s] %s\n', msgs(j).line, msgs(j).id, msgs(j).message);
+                end
+                issues = true;
+              end
+            end
+            if issues
+              error('Lint issues found. Fix before merging.');
+            end
+            disp('All files passed lint check.');
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024a
+          products: >
+            Simulink
+            Powertrain_Blockset
+            Mapping_Toolbox
+            Optimization_Toolbox
+
+      - name: Run unit tests
+        uses: matlab-actions/run-tests@v2
+        with:
+          source-folder: src
+          test-results-junit: test-results/results.xml
+          code-coverage-cobertura: coverage/coverage.xml
+          select-by-folder: tests
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  build-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check docs folder
+        run: |
+          if [ -f "docs/project_description.docx" ]; then
+            echo "Project documentation present."
+          else
+            echo "WARNING: docs/project_description.docx not found."
+          fi
+      - name: Verify README
+        run: |
+          if grep -q "Overview" README.md; then
+            echo "README.md valid."
+          else
+            echo "README.md missing Overview section." && exit 1
+          fiv
