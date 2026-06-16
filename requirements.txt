@@ -1,0 +1,17 @@
+# MATLAB Toolbox Requirements
+# BEV Intelligent Trip Planner
+# Install via MATLAB Add-On Explorer or mpm
+
+MATLAB>=R2024a
+Simulink>=10.7
+Powertrain_Blockset>=1.5
+Mapping_Toolbox>=5.6
+Optimization_Toolbox>=9.5
+
+# Optional (for Simulink model)
+Virtual_Vehicle_Composer_App>=1.0
+Stateflow>=10.7
+
+# External APIs
+# Google Maps Directions API  — enable at https://console.cloud.google.com
+# Google Maps Elevation API   — enable at https://console.cloud.google.com
